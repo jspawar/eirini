@@ -114,8 +114,10 @@ func initStager(cfg *eirini.Config) eirini.Stager {
 	}
 
 	stagerCfg := eirini.StagerConfig{
-		EiriniAddress: cfg.Properties.EiriniAddress,
-		Image:         getStagerImage(cfg),
+		EiriniAddress:   cfg.Properties.EiriniAddress,
+		DownloaderImage: cfg.Properties.DownloaderImage,
+		UploaderImage:   cfg.Properties.UploaderImage,
+		ExecutorImage:   cfg.Properties.ExecutorImage,
 	}
 
 	httpClient, err := util.CreateTLSHTTPClient(
@@ -217,10 +219,6 @@ func launchEventReporter(kubeConfigPath, uri, ca, cert, key, namespace string) {
 
 	go crashInformer.Start()
 	go reporter.Run()
-}
-
-func getStagerImage(cfg *eirini.Config) string {
-	return cfg.Properties.StagerImage
 }
 
 func exitWithError(err error) {
