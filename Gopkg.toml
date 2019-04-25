@@ -3,6 +3,10 @@
   version = "1.6.0"
 
 [[constraint]]
+  name = "code.cloudfoundry.org/bbs"
+  revision = "893e3473b7d051f5de19ca6ed083464057bc1b12"
+
+[[constraint]]
   name = "github.com/onsi/ginkgo"
   version = "1.4.0"
 
@@ -25,6 +29,10 @@
 [[constraint]]
   branch = "master"
   name = "code.cloudfoundry.org/goshims"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/cloudfoundry-incubator/credhub-cli"

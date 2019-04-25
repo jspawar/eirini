@@ -882,39 +882,33 @@ func TestParserSplitMsg(t *testing.T) {
 }
 
 func TestNormalizeError(t *testing.T) {
-	received := "Typical Error"
-	expected := strings.ToLower(received)
-	if s := normalizeErr("-ERR '" + received + "'"); s != expected {
+	expected := "Typical Error"
+	if s := normalizeErr("-ERR '" + expected + "'"); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
 
-	received = "Trim Surrounding Spaces"
-	expected = strings.ToLower(received)
-	if s := normalizeErr("-ERR    '" + received + "'   "); s != expected {
+	expected = "Trim Surrounding Spaces"
+	if s := normalizeErr("-ERR    '" + expected + "'   "); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
 
-	received = "Trim Surrounding Spaces Without Quotes"
-	expected = strings.ToLower(received)
-	if s := normalizeErr("-ERR    " + received + "   "); s != expected {
+	expected = "Trim Surrounding Spaces Without Quotes"
+	if s := normalizeErr("-ERR    " + expected + "   "); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
 
-	received = "Error Without Quotes"
-	expected = strings.ToLower(received)
-	if s := normalizeErr("-ERR " + received); s != expected {
+	expected = "Error Without Quotes"
+	if s := normalizeErr("-ERR " + expected); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
 
-	received = "Error With Quote Only On Left"
-	expected = strings.ToLower(received)
-	if s := normalizeErr("-ERR '" + received); s != expected {
+	expected = "Error With Quote Only On Left"
+	if s := normalizeErr("-ERR '" + expected); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
 
-	received = "Error With Quote Only On Right"
-	expected = strings.ToLower(received)
-	if s := normalizeErr("-ERR " + received + "'"); s != expected {
+	expected = "Error With Quote Only On Right"
+	if s := normalizeErr("-ERR " + expected + "'"); s != expected {
 		t.Fatalf("Expected '%s', got '%s'", expected, s)
 	}
 }
@@ -1560,4 +1554,115 @@ func TestNKeyOptionFromSeed(t *testing.T) {
 	}
 	close(ch)
 	wg.Wait()
+}
+
+func TestLookupHostResultIsRandomized(t *testing.T) {
+	orgAddrs, err := net.LookupHost("localhost")
+	if err != nil {
+		t.Fatalf("Error looking up host: %v", err)
+	}
+	if len(orgAddrs) < 2 {
+		t.Skip("localhost resolves to less than 2 addresses, so test not relevant")
+	}
+
+	opts := gnatsd.DefaultTestOptions
+	// For this test, important to be able to listen on both IPv4/v6
+	// because it is likely than in local test, localhost will resolve
+	// to ::1 and 127.0.0.1
+	opts.Host = "0.0.0.0"
+	opts.Port = TEST_PORT
+	s := RunServerWithOptions(opts)
+	defer s.Shutdown()
+
+	for i := 0; i < 10; i++ {
+		nc, err := Connect(fmt.Sprintf("localhost:%d", TEST_PORT))
+		if err != nil {
+			t.Fatalf("Error on connect: %v", err)
+		}
+		nc.mu.Lock()
+		host, _, _ := net.SplitHostPort(nc.conn.LocalAddr().String())
+		nc.mu.Unlock()
+		isFirst := host == orgAddrs[0]
+		nc.Close()
+		if !isFirst {
+			// We used one that is not the first of the resolved addresses,
+			// so we consider the test good in that IPs were randomized.
+			return
+		}
+	}
+	t.Fatalf("Always used first address returned by LookupHost")
+}
+
+func TestConnectedAddr(t *testing.T) {
+	s := RunServerOnPort(TEST_PORT)
+	defer s.Shutdown()
+
+	var nc *Conn
+	if addr := nc.ConnectedAddr(); addr != _EMPTY_ {
+		t.Fatalf("Expected empty result for nil connection, got %q", addr)
+	}
+	nc, err := Connect(fmt.Sprintf("localhost:%d", TEST_PORT))
+	if err != nil {
+		t.Fatalf("Error connecting: %v", err)
+	}
+	expected := s.Addr().String()
+	if addr := nc.ConnectedAddr(); addr != expected {
+		t.Fatalf("Expected address %q, got %q", expected, addr)
+	}
+	nc.Close()
+	if addr := nc.ConnectedAddr(); addr != _EMPTY_ {
+		t.Fatalf("Expected empty result for closed connection, got %q", addr)
+	}
+}
+
+func BenchmarkNextMsgNoTimeout(b *testing.B) {
+	s := RunServerOnPort(TEST_PORT)
+	defer s.Shutdown()
+
+	ncp, err := Connect(fmt.Sprintf("localhost:%d", TEST_PORT))
+	if err != nil {
+		b.Fatalf("Error connecting: %v", err)
+	}
+	ncs, err := Connect(fmt.Sprintf("localhost:%d", TEST_PORT), SyncQueueLen(b.N))
+	if err != nil {
+		b.Fatalf("Error connecting: %v", err)
+	}
+
+	// Test processing speed so no long subject or payloads.
+	subj := "a"
+
+	sub, err := ncs.SubscribeSync(subj)
+	if err != nil {
+		b.Fatalf("Error subscribing: %v", err)
+	}
+	ncs.Flush()
+
+	// Set it up so we can internally queue all the messages.
+	sub.SetPendingLimits(b.N, b.N*1000)
+
+	for i := 0; i < b.N; i++ {
+		ncp.Publish(subj, nil)
+	}
+	ncp.Flush()
+
+	// Wait for them to all be queued up, testing NextMsg not server here.
+	// Only wait at most one second.
+	wait := time.Now().Add(time.Second)
+	for time.Now().Before(wait) {
+		nm, _, err := sub.Pending()
+		if err != nil {
+			b.Fatalf("Error on Pending() - %v", err)
+		}
+		if nm >= b.N {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := sub.NextMsg(10 * time.Millisecond); err != nil {
+			b.Fatalf("Error getting message[%d]: %v", i, err)
+		}
+	}
 }

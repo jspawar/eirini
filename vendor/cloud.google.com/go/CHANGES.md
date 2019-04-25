@@ -1,5 +1,88 @@
 # Changes
 
+## 0.37.4
+
+This patch releases re-builds the go.sum. This was not possible in the
+previous release.
+
+## 0.37.3
+
+This patch release removes github.com/golang/lint from the transitive
+dependency list, resolving `go get -u` problems.
+
+Note: this release intentionally has a broken go.sum. Please use v0.37.4.
+
+## 0.37.2
+
+This patch release is mostly intended to bring in v0.3.0 of
+google.golang.org/api, which fixes a GCF deployment issue.
+
+Note: we had to-date accidentally marked Redis as stable. In this release, we've
+fixed it by downgrading its documentation to alpha, as it is in other languages
+and docs.
+
+- all:
+  - Document context in generated libraries.
+
+## 0.37.1
+
+Small go.mod version bumps to bring in v0.2.0 of google.golang.org/api, which
+introduces a new oauth2 url.
+
+## 0.37.0
+
+- spanner:
+  - Add BatchDML method.
+  - Reduced initial time between retries.
+- bigquery:
+  - Produce better error messages for InferSchema.
+  - Add logical type control for avro loads.
+  - Add support for the GEOGRAPHY type.
+- datastore:
+  - Add sentinel value DetectProjectID for auto-detecting project ID.
+  - Allow flatten tag on struct pointers.
+  - Fixed a bug that caused queries to panic with invalid queries. Instead they
+    will now return an error.
+- profiler:
+  - Add ability to override GCE zone and instance.
+- pubsub:
+  - BEHAVIOR CHANGE: Refactor error code retry logic. RPCs should now more
+    consistently retry specific error codes based on whether they're idempotent
+    or non-idempotent.
+- httpreplay: Fixed a bug when a non-GET request had a zero-length body causing
+  the Content-Length header to be dropped.
+- iot:
+  - Add new apiv1 client.
+- securitycenter:
+  - Add new apiv1 client.
+- cloudscheduler:
+  - Add new apiv1 client.
+
+## 0.36.0
+
+- spanner:
+  - Reduce minimum retry backoff from 1s to 100ms. This makes time between
+    retries much faster and should improve latency.
+- storage:
+  - Add support for Bucket Policy Only.
+- kms:
+  - Add ResourceIAM helper method.
+  - Deprecate KeyRingIAM and CryptoKeyIAM. Please use ResourceIAM.
+- firestore:
+  - Switch from v1beta1 API to v1 API.
+  - Allow emulator with FIRESTORE_EMULATOR_HOST.
+- bigquery:
+  - Add NumLongTermBytes to Table.
+  - Add TotalBytesProcessedAccuracy to QueryStatistics.
+- irm:
+  - Add new v1alpha2 client.
+- talent:
+  - Add new v4beta1 client.
+- rpcreplay:
+  - Fix connection to work with grpc >= 1.17.
+  - It is now required for an actual gRPC server to be running for Dial to
+    succeed.
+
 ## 0.35.1
 
 - spanner:
