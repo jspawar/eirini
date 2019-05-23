@@ -45,6 +45,10 @@ type Config struct {
 }
 
 type Properties struct {
+	ServerCertPath string `yaml:"server_cert_path"`
+	ServerKeyPath  string `yaml:"server_key_path"`
+	ServerCAPath   string `yaml:"server_ca_path"`
+
 	KubeNamespace     string `yaml:"kube_namespace"`
 	NatsPassword      string `yaml:"nats_password"`
 	NatsIP            string `yaml:"nats_ip"`

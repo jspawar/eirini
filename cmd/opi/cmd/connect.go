@@ -98,7 +98,15 @@ func connect(cmd *cobra.Command, args []string) {
 	handler := handler.New(bifrost, stager, handlerLogger)
 
 	handlerLogger.Info("opi-connected")
-	handlerLogger.Fatal("opi-crashed", http.ListenAndServe("0.0.0.0:8085", handler))
+	if tlsEnabled(cfg) == true {
+		handlerLogger.Fatal("opi-crashed", http.ListenAndServeTLS("0.0.0.0:8085", cfg.Properties.CCCertPath, cfg.Properties.CCKeyPath, handler))
+	} else {
+		handlerLogger.Fatal("opi-crashed", http.ListenAndServe("0.0.0.0:8085", handler))
+	}
+}
+
+func tlsEnabled(cfg *eirini.Config) bool {
+	return cfg.Properties.CCCAPath != "" && cfg.Properties.CCCertPath != "" && cfg.Properties.CCKeyPath != ""
 }
 
 func initStager(cfg *eirini.Config) eirini.Stager {
