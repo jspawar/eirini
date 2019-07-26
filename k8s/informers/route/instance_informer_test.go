@@ -48,7 +48,10 @@ var _ = Describe("InstanceChangeInformer", func() {
 	createPod := func(name string) *corev1.Pod {
 		return &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:        name,
+				Name: name,
+				Labels: map[string]string{
+					"guid": name + "-guid",
+				},
 				Annotations: map[string]string{cf.ProcessGUID: name + "-anno"},
 				OwnerReferences: []metav1.OwnerReference{
 					{
@@ -162,7 +165,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
 				},
 
-				Name:       "mr-stateful-0",
+				Name:       "mr-stateful-0-guid",
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       8080,
@@ -181,7 +184,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 					RegisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
 				},
 
-				Name:       "mr-stateful-0",
+				Name:       "mr-stateful-0-guid",
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       6565,
@@ -241,7 +244,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 					RegisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
 				},
 
-				Name:       "mr-stateful-0",
+				Name:       "mr-stateful-0-guid",
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       8080,
@@ -372,7 +375,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 					UnregisteredRoutes: []string{"mr-stateful.50.60.70.80.nip.io"},
 				},
 
-				Name:       "mr-stateful-0",
+				Name:       "mr-stateful-0-guid",
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       8080,
@@ -390,7 +393,7 @@ var _ = Describe("InstanceChangeInformer", func() {
 					UnregisteredRoutes: []string{"mr-bombastic.50.60.70.80.nip.io"},
 				},
 
-				Name:       "mr-stateful-0",
+				Name:       "mr-stateful-0-guid",
 				InstanceID: "mr-stateful-0",
 				Address:    "10.20.30.40",
 				Port:       6565,
